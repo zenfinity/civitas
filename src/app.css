@@ -1,0 +1,186 @@
+:root {
+	--color-bg: #f7f5fb;
+	--color-surface: #ffffff;
+	--color-border: #e0d9f0;
+	--color-text: #1e1a2e;
+	--color-text-muted: #6e6585;
+	--color-accent: #7c3aed;
+	--color-accent-hover: #6d28d9;
+	--color-success: #16a34a;
+	--color-warning: #d97706;
+	--color-danger: #dc2626;
+
+	--font-sans: 'Inter', system-ui, -apple-system, sans-serif;
+	--font-display: 'Cormorant Garamond', 'Palatino Linotype', Georgia, serif;
+	--font-mono: 'JetBrains Mono', 'Fira Code', monospace;
+
+	--radius: 6px;
+	--radius-lg: 12px;
+	--shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+	--shadow: 0 1px 3px rgba(0, 0, 0, 0.1), 0 1px 2px rgba(0, 0, 0, 0.06);
+
+	--max-width: 1100px;
+	--content-width: 720px;
+}
+
+*, *::before, *::after {
+	box-sizing: border-box;
+}
+
+html {
+	font-size: 16px;
+}
+
+body {
+	margin: 0;
+	background: var(--color-bg);
+	color: var(--color-text);
+	font-family: var(--font-sans);
+	line-height: 1.6;
+	-webkit-font-smoothing: antialiased;
+}
+
+a {
+	color: var(--color-accent);
+	text-decoration: none;
+}
+
+a:hover {
+	text-decoration: underline;
+}
+
+h1, h2, h3, h4 {
+	font-family: var(--font-display);
+	line-height: 1.2;
+	font-weight: 600;
+	margin: 0 0 0.5em;
+}
+
+h1 { font-size: 2.25rem; }
+h2 { font-size: 1.75rem; }
+h3 { font-size: 1.25rem; }
+
+p {
+	margin: 0 0 1em;
+}
+
+.btn {
+	display: inline-flex;
+	align-items: center;
+	gap: 0.5rem;
+	padding: 0.625rem 1.25rem;
+	border-radius: var(--radius);
+	font-size: 0.9375rem;
+	font-weight: 500;
+	cursor: pointer;
+	border: 1px solid transparent;
+	transition: background 0.15s, color 0.15s, border-color 0.15s;
+	text-decoration: none;
+}
+
+.btn-primary {
+	background: var(--color-accent);
+	color: #fff;
+}
+
+.btn-primary:hover {
+	background: var(--color-accent-hover);
+	text-decoration: none;
+	color: #fff;
+}
+
+.btn-secondary {
+	background: var(--color-surface);
+	color: var(--color-text);
+	border-color: var(--color-border);
+}
+
+.btn-secondary:hover {
+	background: var(--color-bg);
+	text-decoration: none;
+}
+
+.btn-ghost {
+	background: transparent;
+	color: var(--color-text-muted);
+}
+
+.btn-ghost:hover {
+	background: var(--color-border);
+	color: var(--color-text);
+	text-decoration: none;
+}
+
+.container {
+	max-width: var(--max-width);
+	margin: 0 auto;
+	padding: 0 1.5rem;
+}
+
+.card {
+	background: var(--color-surface);
+	border: 1px solid var(--color-border);
+	border-radius: var(--radius-lg);
+	padding: 1.5rem;
+	box-shadow: var(--shadow-sm);
+}
+
+.label {
+	display: block;
+	font-size: 0.875rem;
+	font-weight: 500;
+	color: var(--color-text-muted);
+	margin-bottom: 0.375rem;
+	text-transform: uppercase;
+	letter-spacing: 0.04em;
+}
+
+.input {
+	width: 100%;
+	padding: 0.625rem 0.875rem;
+	border: 1px solid var(--color-border);
+	border-radius: var(--radius);
+	font-size: 1rem;
+	background: var(--color-surface);
+	color: var(--color-text);
+	transition: border-color 0.15s;
+}
+
+.input:focus {
+	outline: none;
+	border-color: var(--color-accent);
+	box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+}
+
+.badge {
+	display: inline-flex;
+	align-items: center;
+	padding: 0.2rem 0.6rem;
+	border-radius: 999px;
+	font-size: 0.75rem;
+	font-weight: 500;
+	background: var(--color-border);
+	color: var(--color-text-muted);
+}
+
+.badge-federal { background: #ede9fe; color: #5b21b6; }
+.badge-state   { background: #dcfce7; color: #15803d; }
+.badge-metro   { background: #fef9c3; color: #a16207; }
+.badge-county  { background: #ffe4e6; color: #be123c; }
+.badge-city    { background: #f3e8ff; color: #7e22ce; }
+.badge-school  { background: #ffedd5; color: #c2410c; }
+.badge-special { background: #f1f5f9; color: #475569; }
+
+.completeness-bar {
+	height: 4px;
+	border-radius: 999px;
+	background: var(--color-border);
+	overflow: hidden;
+}
+
+.completeness-fill {
+	height: 100%;
+	border-radius: 999px;
+	background: var(--color-success);
+	transition: width 0.3s;
+}
