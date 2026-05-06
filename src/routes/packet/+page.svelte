@@ -1,26 +1,32 @@
 <script lang="ts">
-	import type { Representative, Issue } from '$lib/types';
-	import { CHANNEL_LABELS } from '$lib/types';
+	import { CHANNEL_LABELS, type Channel, type Representative } from '$lib/types';
 	import { encryptPack, downloadPack } from '$lib/crypto';
-	import { emptyPack } from '$lib/types';
+	import { pack, reps as storeReps, issues as storeIssues, recordAction } from '$lib/store';
 
-	// TODO: pull reps and issues from session store
-	let reps = $state<Representative[]>([]);
-	let issues = $state<Issue[]>([]);
-
-	// checked[repId][issueId][channel] = true/false
-	let checked = $state<Record<string, Record<string, Record<string, boolean>>>>({});
+	const reps = $derived($storeReps);
+	const issues = $derived($storeIssues);
 
 	let passphrase = $state('');
 	let showSaveDialog = $state(false);
 	let saving = $state(false);
 	let saveError = $state('');
 
+	function isChecked(repId: string, issueId: string, channel: string) {
+		return $pack.actions.some(
+			(a) => a.rep_id === repId && a.issue_id === issueId && a.channel === channel && a.status === 'sent'
+		);
+	}
+
 	function toggle(repId: string, issueId: string, channel: string) {
-		if (!checked[repId]) checked[repId] = {};
-		if (!checked[repId][issueId]) checked[repId][issueId] = {};
-		checked[repId][issueId][channel] = !checked[repId][issueId][channel];
-		checked = { ...checked };
+		const currently = isChecked(repId, issueId, channel);
+		recordAction({
+			rep_id: repId,
+			issue_id: issueId,
+			channel: channel as Channel,
+			sent_at: new Date().toISOString(),
+			status: currently ? 'skipped' : 'sent',
+			script_used: false
+		});
 	}
 
 	function availableChannels(rep: Representative) {
@@ -38,10 +44,7 @@
 		saving = true;
 		saveError = '';
 		try {
-			const pack = emptyPack();
-			pack.reps = reps;
-			pack.issues = issues;
-			const blob = await encryptPack(pack, passphrase);
+			const blob = await encryptPack($pack, passphrase);
 			downloadPack(blob);
 			showSaveDialog = false;
 			passphrase = '';
@@ -52,12 +55,7 @@
 		}
 	}
 
-	const totalActions = $derived(
-		Object.values(checked)
-			.flatMap((r) => Object.values(r))
-			.flatMap((i) => Object.values(i))
-			.filter(Boolean).length
-	);
+	const totalActions = $derived($pack.actions.filter((a) => a.status === 'sent').length);
 </script>
 
 <svelte:head>
@@ -114,7 +112,7 @@
 										<label class="action-check">
 											<input
 												type="checkbox"
-												checked={checked[rep.id]?.[issue.id]?.[ch.key] ?? false}
+												checked={isChecked(rep.id, issue.id, ch.key)}
 												onchange={() => toggle(rep.id, issue.id, ch.key)}
 											/>
 											{#if ch.href}

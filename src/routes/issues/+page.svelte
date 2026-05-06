@@ -51,42 +51,43 @@
 		}
 	];
 
-	let selected = $state(new Set<string>());
+	import { toggleIssue, issues as storeIssues } from '$lib/store';
+
 	let customLabel = $state('');
 	let customDescription = $state('');
-	let customIssues = $state<Issue[]>([]);
 
-	function togglePreset(label: string) {
-		if (selected.has(label)) {
-			selected.delete(label);
+	// IDs of issues currently in the store.
+	const selectedIds = $derived(new Set($storeIssues.map((i) => i.id)));
+
+	function togglePreset(preset: Omit<Issue, 'id'>) {
+		const existing = $storeIssues.find((i) => i.label === preset.label);
+		if (existing) {
+			toggleIssue(existing);
 		} else {
-			selected.add(label);
+			toggleIssue({ id: crypto.randomUUID(), ...preset });
 		}
-		selected = new Set(selected);
 	}
 
 	function addCustom() {
 		if (!customLabel.trim()) return;
-		const issue: Issue = {
+		toggleIssue({
 			id: crypto.randomUUID(),
 			label: customLabel.trim(),
 			description: customDescription.trim(),
 			relevant_levels: ['federal', 'state', 'metro', 'county', 'city', 'school', 'special']
-		};
-		customIssues = [...customIssues, issue];
-		selected.add(issue.id);
-		selected = new Set(selected);
+		});
 		customLabel = '';
 		customDescription = '';
 	}
 
-	function removeCustom(id: string) {
-		customIssues = customIssues.filter((i) => i.id !== id);
-		selected.delete(id);
-		selected = new Set(selected);
+	function removeCustom(issue: Issue) {
+		toggleIssue(issue);
 	}
 
-	const totalSelected = $derived(selected.size);
+	const totalSelected = $derived(selectedIds.size);
+	const customIssues = $derived($storeIssues.filter(
+		(i) => !PRESET_ISSUES.some((p) => p.label === i.label)
+	));
 </script>
 
 <svelte:head>
@@ -108,11 +109,11 @@
 
 	<div class="issue-grid">
 		{#each PRESET_ISSUES as issue}
-			{@const isSelected = selected.has(issue.label)}
+			{@const isSelected = $storeIssues.some((i) => i.label === issue.label)}
 			<button
 				class="issue-card card"
 				class:selected={isSelected}
-				onclick={() => togglePreset(issue.label)}
+				onclick={() => togglePreset(issue)}
 				type="button"
 			>
 				<div class="issue-header">
@@ -174,7 +175,7 @@
 								<span style="color: var(--color-text-muted); font-size: 0.875rem;"> — {issue.description}</span>
 							{/if}
 						</div>
-						<button class="btn btn-ghost" onclick={() => removeCustom(issue.id)} style="padding: 0.25rem 0.5rem;">✕</button>
+						<button class="btn btn-ghost" onclick={() => removeCustom(issue)} style="padding: 0.25rem 0.5rem;">✕</button>
 					</div>
 				{/each}
 			</div>

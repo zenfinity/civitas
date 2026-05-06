@@ -12,7 +12,7 @@ export interface MailingAddress {
 
 export interface Representative {
 	id: string;
-	district_id: string;
+	district_id: string | null;
 	name: string;
 	title: string;
 	level: Level;

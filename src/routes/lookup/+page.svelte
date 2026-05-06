@@ -1,14 +1,17 @@
 <script lang="ts">
-	import type { Representative } from '$lib/types';
+	import { goto } from '$app/navigation';
 	import { LEVEL_LABELS } from '$lib/types';
+	import { setReps, reps as storeReps } from '$lib/store';
 	import RepCard from '$lib/components/RepCard.svelte';
 
 	let address = $state('');
-	let reps = $state<Representative[]>([]);
 	let matchedAddress = $state('');
 	let loading = $state(false);
 	let error = $state('');
 	let searched = $state(false);
+
+	// Show reps already in the store if the user navigated back.
+	let reps = $derived($storeReps);
 
 	async function lookup() {
 		if (!address.trim()) return;
@@ -30,7 +33,7 @@
 				return;
 			}
 
-			reps = data.reps;
+			setReps(data.reps, address);
 			matchedAddress = data.matchedAddress;
 			searched = true;
 		} catch {

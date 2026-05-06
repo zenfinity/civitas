@@ -1,6 +1,6 @@
 import { json } from '@sveltejs/kit';
 import { geocodeAddress } from '$lib/geocode';
-import { getRepsByLatLng } from '$lib/db';
+import { getRepsByLatLng, getAllReps } from '$lib/db';
 import type { RequestHandler } from './$types';
 
 export const POST: RequestHandler = async ({ request }) => {
@@ -12,15 +12,17 @@ export const POST: RequestHandler = async ({ request }) => {
 
 	const geo = await geocodeAddress(address.trim());
 	if (!geo) {
-		return json({ error: 'Address not found. Try a more complete address.' }, { status: 422 });
+		return json(
+			{ error: 'Address not found — try adding a city and state.' },
+			{ status: 422 }
+		);
 	}
 
-	const reps = await getRepsByLatLng(geo.lat, geo.lng);
+	// Try spatial lookup first; fall back to full list until boundaries are loaded.
+	let reps = await getRepsByLatLng(geo.lat, geo.lng);
+	if (!reps.length) {
+		reps = await getAllReps();
+	}
 
-	return json({
-		reps,
-		matchedAddress: geo.matchedAddress,
-		lat: geo.lat,
-		lng: geo.lng
-	});
+	return json({ reps, matchedAddress: geo.matchedAddress });
 };
