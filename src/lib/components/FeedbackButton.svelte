@@ -58,7 +58,7 @@
 			{:else}
 				<h3 id="fb-title">Send feedback</h3>
 				<p style="color: var(--color-text-muted); font-size: 0.875rem; margin-bottom: 1rem;">
-					Bug, idea, or general thought — all welcome.
+					Bug, idea, or general thought — all welcome. Or <a href="https://github.com/zenfinity/civitas/issues" target="_blank" rel="noopener">open an issue directly on GitHub</a>.
 				</p>
 				<label class="label" for="fb-message">Message</label>
 				<textarea
