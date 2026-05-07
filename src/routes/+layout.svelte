@@ -172,7 +172,17 @@
 		}
 
 		.header-inner {
-			gap: 1rem;
+			height: auto;
+			padding: 0.5rem 0;
+			flex-wrap: wrap;
+			align-items: flex-start;
+			gap: 0.375rem 1rem;
+		}
+
+		.breadcrumbs {
+			width: 100%;
+			flex-wrap: wrap;
+			row-gap: 0.125rem;
 		}
 	}
 </style>
