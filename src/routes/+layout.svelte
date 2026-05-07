@@ -1,6 +1,7 @@
 <script lang="ts">
 	import '../app.css';
 	import { page } from '$app/state';
+	import FeedbackButton from '$lib/components/FeedbackButton.svelte';
 
 	const { children } = $props();
 
@@ -42,6 +43,8 @@
 	<main class="site-main">
 		{@render children()}
 	</main>
+
+	<FeedbackButton />
 
 	<footer class="site-footer">
 		<div class="container">
