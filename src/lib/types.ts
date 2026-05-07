@@ -1,4 +1,44 @@
 export type Level = 'federal' | 'state' | 'metro' | 'county' | 'city' | 'school' | 'special';
+
+export interface CivicVotingLocation {
+	name?: string;
+	address: string;
+	notes?: string;
+	polling_hours?: string;
+	start_date?: string;
+	end_date?: string;
+}
+
+export interface CivicContest {
+	office?: string;
+	district?: string;
+	candidates?: { name: string; party?: string; url?: string }[];
+	referendum_title?: string;
+	referendum_url?: string;
+}
+
+export interface CivicStateInfo {
+	name: string;
+	election_info_url?: string;
+	voter_registration_url?: string;
+	registration_confirmation_url?: string;
+	absentee_url?: string;
+	ballot_info_url?: string;
+	voting_location_finder_url?: string;
+}
+
+export interface CivicInfo {
+	fetched_at: string;
+	election_name?: string;
+	election_day?: string;
+	mail_only: boolean;
+	drop_off_locations: CivicVotingLocation[];
+	early_vote_sites: CivicVotingLocation[];
+	polling_locations: CivicVotingLocation[];
+	contests: CivicContest[];
+	state_info?: CivicStateInfo;
+}
+
 export type Channel = 'phone' | 'mail' | 'email' | 'fax' | 'web_form';
 export type ActionStatus = 'pending' | 'sent' | 'skipped';
 export type Tone = 'constituent_concern' | 'formal_request' | 'urgent_action';
@@ -67,6 +107,7 @@ export interface Pack {
 	issues: Issue[];
 	actions: Action[];
 	prefs: Prefs;
+	civic_info?: CivicInfo | null;
 }
 
 export function emptyPack(address = ''): Pack {

@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
-	import { LEVEL_LABELS, type Representative, type Issue, type Tone } from '$lib/types';
+	import { LEVEL_LABELS, type Representative, type Issue, type Tone, type CivicInfo } from '$lib/types';
 	import { encryptPack, downloadPack } from '$lib/crypto';
 	import { pack, reps as storeReps, issues as storeIssues, recordAction } from '$lib/store';
 	import allTemplates from '$lib/issue-templates.json';
@@ -153,6 +153,15 @@
 		$pack.actions.filter((a) => a.status === 'pending' || a.status === 'sent').length
 	);
 
+	const civicInfo = $derived($pack.civic_info ?? null);
+
+	function formatElectionDay(dateStr: string): string {
+		const [y, m, d] = dateStr.split('-').map(Number);
+		return new Date(y, m - 1, d).toLocaleDateString('en-US', {
+			weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
+		});
+	}
+
 	async function savePack() {
 		if (!passphrase) return;
 		saving = true;
@@ -191,6 +200,81 @@
 			<button class="btn btn-secondary" onclick={() => (showSaveDialog = true)}>Save pack</button>
 		</div>
 	</div>
+
+	{#if civicInfo}
+		<div class="civic-print-banner">
+			<div class="civic-print-inner">
+				{#if civicInfo.election_name}
+					<div class="civic-print-block">
+						<span class="civic-print-label">Next election</span>
+						<strong>{civicInfo.election_name}</strong>
+						{#if civicInfo.election_day}
+							<span>{formatElectionDay(civicInfo.election_day)}</span>
+						{/if}
+						{#if civicInfo.mail_only}
+							<span class="civic-print-tag">Vote by mail</span>
+						{/if}
+					</div>
+				{/if}
+				{#if civicInfo.state_info}
+					{@const si = civicInfo.state_info}
+					<div class="civic-print-block">
+						<span class="civic-print-label">State voter resources</span>
+						<div class="civic-print-links">
+							{#if si.voter_registration_url}
+								<a href={si.voter_registration_url} target="_blank" rel="noopener">Register to vote</a>
+							{/if}
+							{#if si.registration_confirmation_url}
+								<a href={si.registration_confirmation_url} target="_blank" rel="noopener">Confirm registration</a>
+							{/if}
+							{#if si.ballot_info_url}
+								<a href={si.ballot_info_url} target="_blank" rel="noopener">Ballot information</a>
+							{/if}
+							{#if si.absentee_url}
+								<a href={si.absentee_url} target="_blank" rel="noopener">Mail ballot</a>
+							{/if}
+							{#if si.voting_location_finder_url}
+								<a href={si.voting_location_finder_url} target="_blank" rel="noopener">Find voting location</a>
+							{/if}
+						</div>
+					</div>
+				{/if}
+				{#if civicInfo.drop_off_locations.length}
+					<div class="civic-print-block">
+						<span class="civic-print-label">Ballot drop boxes</span>
+						{#each civicInfo.drop_off_locations.slice(0, 3) as loc}
+							<div class="civic-print-location">
+								{#if loc.name}<strong>{loc.name}</strong> — {/if}{loc.address}
+								{#if loc.polling_hours}<span class="civic-print-hours">{loc.polling_hours}</span>{/if}
+							</div>
+						{/each}
+					</div>
+				{/if}
+				{#if civicInfo.early_vote_sites.length}
+					<div class="civic-print-block">
+						<span class="civic-print-label">Early voting</span>
+						{#each civicInfo.early_vote_sites.slice(0, 3) as loc}
+							<div class="civic-print-location">
+								{#if loc.name}<strong>{loc.name}</strong> — {/if}{loc.address}
+								{#if loc.polling_hours}<span class="civic-print-hours">{loc.polling_hours}</span>{/if}
+							</div>
+						{/each}
+					</div>
+				{/if}
+				{#if civicInfo.polling_locations.length}
+					<div class="civic-print-block">
+						<span class="civic-print-label">Polling places</span>
+						{#each civicInfo.polling_locations.slice(0, 3) as loc}
+							<div class="civic-print-location">
+								{#if loc.name}<strong>{loc.name}</strong> — {/if}{loc.address}
+								{#if loc.polling_hours}<span class="civic-print-hours">{loc.polling_hours}</span>{/if}
+							</div>
+						{/each}
+					</div>
+				{/if}
+			</div>
+		</div>
+	{/if}
 
 	{#if !activeReps.length || !issues.length}
 		<div class="empty-state card">
@@ -624,10 +708,89 @@
 		margin-bottom: 0.75rem;
 	}
 
+	.civic-print-banner {
+		margin-bottom: 1.75rem;
+		padding: 1rem 1.25rem;
+		border: 1px solid var(--color-border);
+		border-radius: var(--radius-lg);
+		background: var(--color-surface);
+	}
+
+	.civic-print-inner {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 1.25rem 2.5rem;
+	}
+
+	.civic-print-block {
+		display: flex;
+		flex-direction: column;
+		gap: 0.2rem;
+		font-size: 0.875rem;
+	}
+
+	.civic-print-label {
+		font-size: 0.6875rem;
+		font-weight: 700;
+		text-transform: uppercase;
+		letter-spacing: 0.06em;
+		color: var(--color-text-muted);
+		margin-bottom: 0.1rem;
+	}
+
+	.civic-print-tag {
+		display: inline-block;
+		padding: 0.1rem 0.4rem;
+		border-radius: 999px;
+		border: 1px solid var(--color-border);
+		font-size: 0.6875rem;
+		color: var(--color-text-muted);
+		width: fit-content;
+	}
+
+	.civic-print-links {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.3rem 0.75rem;
+	}
+
+	.civic-print-links a {
+		font-size: 0.8125rem;
+		color: var(--color-accent);
+		text-decoration: none;
+	}
+
+	.civic-print-links a:hover {
+		text-decoration: underline;
+	}
+
+	.civic-print-location {
+		line-height: 1.4;
+		color: var(--color-text);
+	}
+
+	.civic-print-hours {
+		display: block;
+		font-size: 0.75rem;
+		color: var(--color-text-muted);
+	}
+
 	@media print {
 		.header-actions,
 		.dialog-overlay {
 			display: none !important;
+		}
+
+		.civic-print-banner {
+			border: 1px solid #ccc;
+			break-inside: avoid;
+			margin-bottom: 1rem;
+		}
+
+		.civic-print-links a::after {
+			content: ' (' attr(href) ')';
+			font-size: 0.6875rem;
+			color: #555;
 		}
 	}
 </style>

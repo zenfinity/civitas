@@ -1,6 +1,6 @@
 import { writable, derived } from 'svelte/store';
 import { browser } from '$app/environment';
-import type { Pack, Representative, Issue, Action, Channel } from './types';
+import type { Pack, Representative, Issue, Action, Channel, CivicInfo } from './types';
 import { emptyPack } from './types';
 
 const STORAGE_KEY = 'civitas_pack';
@@ -82,6 +82,10 @@ export function removeAction(repId: string, issueId: string, channel: Channel) {
 			(a) => !(a.rep_id === repId && a.issue_id === issueId && a.channel === channel)
 		)
 	}));
+}
+
+export function setCivicInfo(info: CivicInfo | null) {
+	pack.update((p) => ({ ...p, civic_info: info }));
 }
 
 export function loadPack(loaded: Pack) {
