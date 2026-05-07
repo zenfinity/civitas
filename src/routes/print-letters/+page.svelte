@@ -36,6 +36,22 @@
 	const envelopes = $derived(letters.filter((l) => l.rep.mailing_address));
 
 	let includeEnvelopes = $state(false);
+	let handwritten = $state(false);
+
+	function buildLetterHeader(rep: Representative): string {
+		const name = $pack.prefs.name || 'Your Name';
+		const addr = $pack.meta.address || '';
+		const date = new Date().toLocaleDateString('en-US', {
+			year: 'numeric', month: 'long', day: 'numeric'
+		});
+		const parts = [`${name}\n${addr}`, date];
+		if (rep.mailing_address) {
+			const { street, city, state, zip } = rep.mailing_address;
+			parts.push(`${rep.name}\n${rep.title}\n${street}\n${city}, ${state} ${zip}`);
+		}
+		parts.push(`Dear ${rep.title} ${rep.name},`);
+		return parts.join('\n\n');
+	}
 
 	function formatMailingAddress(rep: Representative): string {
 		if (!rep.mailing_address) return '';
@@ -68,6 +84,10 @@
 		<div class="toolbar-right">
 			{#if letters.length > 0}
 				<label class="envelope-toggle">
+					<input type="checkbox" bind:checked={handwritten} />
+					<span>Handwritten</span>
+				</label>
+				<label class="envelope-toggle">
 					<input type="checkbox" bind:checked={includeEnvelopes} />
 					<span>Include envelopes</span>
 				</label>
@@ -90,12 +110,21 @@
 	{:else}
 		<div class="letters-wrap">
 			{#each letters as letter, i}
-				<article class="letter-page">
+				<article class="letter-page" class:letter-hw={handwritten}>
 					<div class="letter-label no-print">
 						<span class="letter-num">Letter {i + 1}</span>
 						{letter.rep.name} — {letter.issueLabel}
 					</div>
-					{#if letter.text}
+					{#if handwritten}
+						<pre class="hw-header">{buildLetterHeader(letter.rep)}</pre>
+						<div class="hw-write"></div>
+						<div class="hw-footer">
+							<p class="hw-closing">Sincerely,</p>
+							<div class="hw-sig-gap"></div>
+							<div class="hw-sig-line"></div>
+							<p class="hw-sig-name">{$pack.prefs.name || 'Your Name'}</p>
+						</div>
+					{:else if letter.text}
 						<pre class="letter-text">{letter.text}</pre>
 					{:else}
 						<p class="no-script-note">
@@ -226,6 +255,62 @@
 		font-style: italic;
 	}
 
+	/* Handwritten layout */
+	.letter-page.letter-hw {
+		display: flex;
+		flex-direction: column;
+		height: 11in;
+		min-height: unset;
+	}
+
+	.hw-header {
+		font-family: Georgia, 'Times New Roman', serif;
+		font-size: 12pt;
+		line-height: 1.7;
+		white-space: pre-wrap;
+		margin: 0 0 0.5em;
+		color: #111;
+		flex-shrink: 0;
+	}
+
+	.hw-write {
+		flex: 1;
+		background-image: repeating-linear-gradient(
+			to bottom,
+			transparent,
+			transparent calc(1.85em - 1px),
+			#c8d2dc calc(1.85em - 1px),
+			#c8d2dc 1.85em
+		);
+		margin: 0.5em 0;
+	}
+
+	.hw-footer {
+		flex-shrink: 0;
+		font-family: Georgia, 'Times New Roman', serif;
+		font-size: 12pt;
+		padding-top: 0.5em;
+	}
+
+	.hw-closing {
+		margin: 0 0 0.25em;
+	}
+
+	.hw-sig-gap {
+		height: 1.6em;
+	}
+
+	.hw-sig-line {
+		width: 2.5in;
+		border-bottom: 1px solid #333;
+		margin-bottom: 0.3em;
+	}
+
+	.hw-sig-name {
+		margin: 0;
+		font-size: 12pt;
+	}
+
 	/* Envelopes */
 	.envelopes-wrap {
 		margin-top: 2rem;
@@ -310,6 +395,12 @@
 			padding: 0;
 			width: 100%;
 			min-height: 0;
+		}
+
+		.letter-page.letter-hw {
+			display: flex;
+			flex-direction: column;
+			height: 9in;
 		}
 
 		/* Envelope print mode */
