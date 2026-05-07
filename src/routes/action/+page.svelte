@@ -3,6 +3,7 @@
 	import { LEVEL_LABELS, type Representative, type Issue, type Tone, type CivicInfo } from '$lib/types';
 	import { encryptPack, downloadPack } from '$lib/crypto';
 	import { pack, reps as storeReps, issues as storeIssues, recordAction } from '$lib/store';
+	import { applyTemplate } from '$lib/templates';
 	import allTemplates from '$lib/issue-templates.json';
 
 	type ScriptEntry = { loading: boolean; text: string; error: string };
@@ -25,18 +26,6 @@
 		return `${repId}:${issueId}:${channel}`;
 	}
 
-	function applyTemplate(template: string, rep: Representative): string {
-		const date = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
-		return template
-			.replace(/\{\{DATE\}\}/g, date)
-			.replace(/\{\{REP_NAME\}\}/g, rep.name)
-			.replace(/\{\{REP_TITLE\}\}/g, rep.title)
-			.replace(/\{\{YOUR_NAME\}\}/g, $pack.prefs.name || 'a constituent')
-			.replace(/\{\{YOUR_EMAIL\}\}/g, $pack.prefs.email ?? '')
-			.replace(/\{\{YOUR_ADDRESS\}\}/g, $pack.meta.address ?? '')
-			.replace(/\{\{DISTRICT\}\}/g, rep.district_name ?? '');
-	}
-
 	async function generateScript(rep: Representative, issue: Issue, channel: string) {
 		const k = actionKey(rep.id, issue.id, channel);
 		const tone = $pack.prefs.tone_preference as Tone;
@@ -45,7 +34,7 @@
 		const template = issueTemplates?.[templateKey];
 
 		if (template) {
-			const text = applyTemplate(template, rep);
+			const text = applyTemplate(template, rep, $pack.prefs.name, $pack.prefs.email ?? '', $pack.meta.address ?? '');
 			scripts[k] = { loading: false, text, error: '' };
 			const existing = getAction(rep.id, issue.id, channel);
 			if (existing) recordAction({ ...existing, script_used: true, script: text });
@@ -101,6 +90,10 @@
 		reps.filter((rep) =>
 			$pack.actions.some((a) => a.rep_id === rep.id && (a.status === 'pending' || a.status === 'sent'))
 		)
+	);
+
+	const mailActionCount = $derived(
+		$pack.actions.filter((a) => a.channel === 'mail' && (a.status === 'pending' || a.status === 'sent')).length
 	);
 
 	function getAction(repId: string, issueId: string, channel: string) {
@@ -197,6 +190,9 @@
 		<div class="header-actions">
 			<a href="/packet" class="btn btn-ghost">← Edit selections</a>
 			<button class="btn btn-secondary" onclick={() => window.print()}>Print PDF</button>
+			{#if mailActionCount > 0}
+				<a href="/print-letters" class="btn btn-secondary">Print letters</a>
+			{/if}
 			<button class="btn btn-secondary" onclick={() => (showSaveDialog = true)}>Save pack</button>
 		</div>
 	</div>
