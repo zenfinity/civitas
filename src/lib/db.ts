@@ -10,7 +10,7 @@ function sql() {
 export async function getRepsByLatLng(lat: number, lng: number): Promise<Representative[]> {
 	const db = sql();
 	const rows = await db`
-		SELECT r.*
+		SELECT r.*, d.name AS district_name
 		FROM representatives r
 		JOIN districts d ON d.id = r.district_id
 		WHERE ST_Contains(d.boundary, ST_SetSRID(ST_MakePoint(${lng}, ${lat}), 4326))
@@ -28,7 +28,9 @@ export async function getRepsByLatLng(lat: number, lng: number): Promise<Represe
 export async function getAllReps(): Promise<Representative[]> {
 	const db = sql();
 	const rows = await db`
-		SELECT r.* FROM representatives r
+		SELECT r.*, d.name AS district_name
+		FROM representatives r
+		LEFT JOIN districts d ON d.id = r.district_id
 		ORDER BY
 			CASE r.level
 				WHEN 'federal'  THEN 1 WHEN 'state'   THEN 2 WHEN 'metro'  THEN 3

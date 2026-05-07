@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { CHANNEL_LABELS, type Channel, type Representative } from '$lib/types';
+	import { CHANNEL_LABELS, LEVEL_LABELS, type Channel, type Representative } from '$lib/types';
 	import { encryptPack, downloadPack } from '$lib/crypto';
 	import { pack, reps as storeReps, issues as storeIssues, recordAction } from '$lib/store';
 
@@ -103,6 +103,12 @@
 						{@const channels = availableChannels(rep)}
 						<tr>
 							<td class="rep-cell">
+								<div class="rep-meta">
+									<span class="badge badge-{rep.level}">{LEVEL_LABELS[rep.level]}</span>
+									{#if rep.district_name}
+										<span class="rep-dept">{rep.district_name}</span>
+									{/if}
+								</div>
 								<div class="rep-name">{rep.name}</div>
 								<div class="rep-title">{rep.title}</div>
 							</td>
@@ -248,6 +254,19 @@
 		left: 0;
 		background: var(--color-surface);
 		border-right: 1px solid var(--color-border);
+	}
+
+	.rep-meta {
+		display: flex;
+		align-items: center;
+		gap: 0.375rem;
+		flex-wrap: wrap;
+		margin-bottom: 0.25rem;
+	}
+
+	.rep-dept {
+		font-size: 0.75rem;
+		color: var(--color-text-muted);
 	}
 
 	.rep-name {

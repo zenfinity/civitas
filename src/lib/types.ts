@@ -25,6 +25,7 @@ export interface Representative {
 	verified_at: string | null;
 	completeness_score: number;
 	community_verified: boolean;
+	district_name: string | null;
 }
 
 export interface Issue {

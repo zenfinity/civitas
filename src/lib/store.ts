@@ -1,8 +1,31 @@
 import { writable, derived } from 'svelte/store';
+import { browser } from '$app/environment';
 import type { Pack, Representative, Issue, Action } from './types';
 import { emptyPack } from './types';
 
-export const pack = writable<Pack>(emptyPack());
+const STORAGE_KEY = 'civitas_pack';
+
+function readStorage(): Pack | null {
+	if (!browser) return null;
+	try {
+		const raw = sessionStorage.getItem(STORAGE_KEY);
+		return raw ? (JSON.parse(raw) as Pack) : null;
+	} catch {
+		return null;
+	}
+}
+
+function writeStorage(p: Pack) {
+	if (!browser) return;
+	try {
+		sessionStorage.setItem(STORAGE_KEY, JSON.stringify(p));
+	} catch {}
+}
+
+export const pack = writable<Pack>(readStorage() ?? emptyPack());
+
+// Keep sessionStorage in sync so a page refresh doesn't lose state.
+pack.subscribe(writeStorage);
 
 // Convenience derived stores so pages don't need to destructure manually.
 export const reps = derived(pack, ($p) => $p.reps);

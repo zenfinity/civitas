@@ -1,11 +1,18 @@
 <script lang="ts">
 	import { decryptPack } from '$lib/crypto';
-	import type { Pack } from '$lib/types';
+	import { loadPack } from '$lib/store';
 
 	let fileInput: HTMLInputElement;
 	let passphrase = $state('');
 	let error = $state('');
 	let loading = $state(false);
+	let showUploadPanel = $state(false);
+
+	function openUploadPanel() {
+		showUploadPanel = true;
+		error = '';
+		passphrase = '';
+	}
 
 	async function handleUpload() {
 		const file = fileInput?.files?.[0];
@@ -14,9 +21,9 @@
 		loading = true;
 		error = '';
 		try {
-			const pack: Pack = await decryptPack(file, passphrase);
-			// TODO: store pack in session store and navigate to /lookup
-			console.log('loaded pack', pack);
+			const loaded = await decryptPack(file, passphrase);
+			loadPack(loaded);
+			window.location.assign('/packet');
 		} catch (e) {
 			error = e instanceof Error ? e.message : 'Failed to load pack';
 		} finally {
@@ -39,13 +46,14 @@
 			</p>
 			<div class="ctas">
 				<a href="/lookup" class="btn btn-primary">Get started</a>
-				<button class="btn btn-secondary" onclick={() => fileInput.click()}>
+				<button class="btn btn-secondary" onclick={openUploadPanel}>
 					Load saved session
 				</button>
 			</div>
 		</div>
 
-		<div class="upload-card card" style="display: none;" id="upload-panel">
+		{#if showUploadPanel}
+		<div class="upload-card card">
 			<h3>Load your pack</h3>
 			<p style="font-size: 0.875rem; color: var(--color-text-muted);">
 				Your pack file is decrypted entirely in your browser. Nothing is sent to any server.
@@ -59,9 +67,9 @@
 				bind:this={fileInput}
 				style="padding: 0.375rem;"
 			/>
-			<label class="label" for="passphrase" style="margin-top: 1rem;">Passphrase</label>
+			<label class="label" for="load-passphrase" style="margin-top: 1rem;">Passphrase</label>
 			<input
-				id="passphrase"
+				id="load-passphrase"
 				type="password"
 				class="input"
 				placeholder="Your encryption passphrase"
@@ -70,15 +78,18 @@
 			{#if error}
 				<p style="color: var(--color-danger); font-size: 0.875rem; margin-top: 0.5rem;">{error}</p>
 			{/if}
-			<button
-				class="btn btn-primary"
-				style="margin-top: 1rem; width: 100%;"
-				onclick={handleUpload}
-				disabled={loading}
-			>
-				{loading ? 'Decrypting…' : 'Load session'}
-			</button>
+			<div style="display: flex; gap: 0.75rem; margin-top: 1rem;">
+				<button
+					class="btn btn-primary"
+					onclick={handleUpload}
+					disabled={loading}
+				>
+					{loading ? 'Decrypting…' : 'Load session'}
+				</button>
+				<button class="btn btn-ghost" onclick={() => (showUploadPanel = false)}>Cancel</button>
+			</div>
 		</div>
+		{/if}
 	</div>
 </section>
 
