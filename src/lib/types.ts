@@ -50,6 +50,7 @@ export interface Prefs {
 	ai_scripts_enabled: boolean;
 	preferred_channels: Channel[];
 	name: string;
+	email: string;
 	tone_preference: Tone;
 }
 
@@ -83,6 +84,7 @@ export function emptyPack(address = ''): Pack {
 			ai_scripts_enabled: false,
 			preferred_channels: ['phone', 'email'],
 			name: '',
+			email: '',
 			tone_preference: 'constituent_concern'
 		}
 	};

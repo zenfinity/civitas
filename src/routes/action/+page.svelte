@@ -3,6 +3,7 @@
 	import { LEVEL_LABELS, type Representative, type Issue, type Tone } from '$lib/types';
 	import { encryptPack, downloadPack } from '$lib/crypto';
 	import { pack, reps as storeReps, issues as storeIssues, recordAction } from '$lib/store';
+	import allTemplates from '$lib/issue-templates.json';
 
 	type ScriptEntry = { loading: boolean; text: string; error: string };
 	let scripts = $state<Record<string, ScriptEntry>>({});
@@ -24,13 +25,15 @@
 		return `${repId}:${issueId}:${channel}`;
 	}
 
-	function applyTemplate(template: string, rep: Representative, userName: string): string {
+	function applyTemplate(template: string, rep: Representative): string {
 		const date = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
 		return template
 			.replace(/\{\{DATE\}\}/g, date)
 			.replace(/\{\{REP_NAME\}\}/g, rep.name)
 			.replace(/\{\{REP_TITLE\}\}/g, rep.title)
-			.replace(/\{\{YOUR_NAME\}\}/g, userName || 'a constituent')
+			.replace(/\{\{YOUR_NAME\}\}/g, $pack.prefs.name || 'a constituent')
+			.replace(/\{\{YOUR_EMAIL\}\}/g, $pack.prefs.email ?? '')
+			.replace(/\{\{YOUR_ADDRESS\}\}/g, $pack.meta.address ?? '')
 			.replace(/\{\{DISTRICT\}\}/g, rep.district_name ?? '');
 	}
 
@@ -38,10 +41,11 @@
 		const k = actionKey(rep.id, issue.id, channel);
 		const tone = $pack.prefs.tone_preference as Tone;
 		const templateKey = `${channel}:${tone}`;
-		const template = issue.script_templates?.[templateKey];
+		const issueTemplates = (allTemplates as Record<string, Record<string, string>>)[issue.label];
+		const template = issueTemplates?.[templateKey];
 
 		if (template) {
-			const text = applyTemplate(template, rep, $pack.prefs.name);
+			const text = applyTemplate(template, rep);
 			scripts[k] = { loading: false, text, error: '' };
 			const existing = getAction(rep.id, issue.id, channel);
 			if (existing) recordAction({ ...existing, script_used: true, script: text });
@@ -61,7 +65,9 @@
 					issueDescription: issue.description,
 					channel,
 					tone,
-					userName: $pack.prefs.name
+					userName: $pack.prefs.name,
+					userAddress: $pack.meta.address,
+					userEmail: $pack.prefs.email
 				})
 			});
 

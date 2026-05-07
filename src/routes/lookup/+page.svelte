@@ -1,10 +1,11 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
 	import { LEVEL_LABELS } from '$lib/types';
-	import { pack, setReps, setName, reps as storeReps } from '$lib/store';
+	import { pack, setReps, setName, setEmail, reps as storeReps } from '$lib/store';
 	import RepCard from '$lib/components/RepCard.svelte';
 
 	let name = $state($pack.prefs.name);
+	let email = $state($pack.prefs.email ?? '');
 	let address = $state($pack.meta.address);
 	let matchedAddress = $state('');
 	let loading = $state(false);
@@ -72,6 +73,18 @@
 					placeholder="e.g. Jane Smith"
 					bind:value={name}
 					onblur={() => setName(name)}
+					disabled={loading}
+				/>
+			</div>
+			<div class="field">
+				<label class="label" for="your-email">Email</label>
+				<input
+					id="your-email"
+					class="input"
+					type="email"
+					placeholder="e.g. jane@example.com"
+					bind:value={email}
+					onblur={() => setEmail(email)}
 					disabled={loading}
 				/>
 			</div>

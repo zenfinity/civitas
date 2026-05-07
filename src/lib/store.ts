@@ -1,6 +1,6 @@
 import { writable, derived } from 'svelte/store';
 import { browser } from '$app/environment';
-import type { Pack, Representative, Issue, Action } from './types';
+import type { Pack, Representative, Issue, Action, Channel } from './types';
 import { emptyPack } from './types';
 
 const STORAGE_KEY = 'civitas_pack';
@@ -39,6 +39,10 @@ export function setAddress(address: string) {
 
 export function setName(name: string) {
 	pack.update((p) => ({ ...p, prefs: { ...p.prefs, name } }));
+}
+
+export function setEmail(email: string) {
+	pack.update((p) => ({ ...p, prefs: { ...p.prefs, email } }));
 }
 
 export function setReps(incoming: Representative[], address: string) {
