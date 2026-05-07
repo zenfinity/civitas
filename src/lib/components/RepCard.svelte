@@ -41,15 +41,6 @@
 		<span class="completeness-label">{availableCount}/5 channels</span>
 	</div>
 
-	{#if rep.phone}
-		<a href="tel:{rep.phone}" class="contact-link">☎ {rep.phone}</a>
-	{/if}
-	{#if rep.email}
-		<a href="mailto:{rep.email}" class="contact-link">✉ {rep.email}</a>
-	{/if}
-	{#if rep.web_form_url}
-		<a href={rep.web_form_url} target="_blank" rel="noopener" class="contact-link">Web contact form →</a>
-	{/if}
 </div>
 
 <style>
@@ -115,14 +106,5 @@
 		white-space: nowrap;
 	}
 
-	.contact-link {
-		font-size: 0.875rem;
-		color: var(--color-accent);
-		text-decoration: none;
-		display: block;
-	}
 
-	.contact-link:hover {
-		text-decoration: underline;
-	}
 </style>

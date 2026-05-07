@@ -49,6 +49,11 @@
 			label: 'Water and utilities',
 			description: 'Clean water infrastructure, utility affordability.',
 			relevant_levels: ['federal', 'state', 'city', 'special']
+		},
+		{
+			label: 'AI safety',
+			description: 'Mandatory safety evaluations, algorithmic accountability, independent oversight of high-risk AI.',
+			relevant_levels: ['federal', 'state']
 		}
 	];
 
