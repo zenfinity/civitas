@@ -1,7 +1,7 @@
 <script lang="ts">
-	import { CHANNEL_LABELS, LEVEL_LABELS, type Channel, type Representative } from '$lib/types';
+	import { LEVEL_LABELS, type Channel, type Representative } from '$lib/types';
 	import { encryptPack, downloadPack } from '$lib/crypto';
-	import { pack, reps as storeReps, issues as storeIssues, recordAction } from '$lib/store';
+	import { pack, reps as storeReps, issues as storeIssues, recordAction, removeAction } from '$lib/store';
 
 	const reps = $derived($storeReps);
 	const issues = $derived($storeIssues);
@@ -11,31 +11,34 @@
 	let saving = $state(false);
 	let saveError = $state('');
 
-	function isChecked(repId: string, issueId: string, channel: string) {
+	function isSelected(repId: string, issueId: string, channel: string) {
 		return $pack.actions.some(
-			(a) => a.rep_id === repId && a.issue_id === issueId && a.channel === channel && a.status === 'sent'
+			(a) => a.rep_id === repId && a.issue_id === issueId && a.channel === channel && a.status === 'pending'
 		);
 	}
 
 	function toggle(repId: string, issueId: string, channel: string) {
-		const currently = isChecked(repId, issueId, channel);
-		recordAction({
-			rep_id: repId,
-			issue_id: issueId,
-			channel: channel as Channel,
-			sent_at: new Date().toISOString(),
-			status: currently ? 'skipped' : 'sent',
-			script_used: false
-		});
+		if (isSelected(repId, issueId, channel)) {
+			removeAction(repId, issueId, channel as Channel);
+		} else {
+			recordAction({
+				rep_id: repId,
+				issue_id: issueId,
+				channel: channel as Channel,
+				sent_at: new Date().toISOString(),
+				status: 'pending',
+				script_used: false
+			});
+		}
 	}
 
 	function availableChannels(rep: Representative) {
-		const all: { key: string; label: string; href: string | null }[] = [];
-		if (rep.phone) all.push({ key: 'phone', label: 'Phone', href: `tel:${rep.phone}` });
-		if (rep.email) all.push({ key: 'email', label: 'Email', href: `mailto:${rep.email}` });
-		if (rep.fax) all.push({ key: 'fax', label: 'Fax', href: null });
-		if (rep.mailing_address) all.push({ key: 'mail', label: 'Mail', href: null });
-		if (rep.web_form_url) all.push({ key: 'web_form', label: 'Web form', href: rep.web_form_url });
+		const all: { key: string; label: string }[] = [];
+		if (rep.phone) all.push({ key: 'phone', label: 'Phone' });
+		if (rep.email) all.push({ key: 'email', label: 'Email' });
+		if (rep.fax) all.push({ key: 'fax', label: 'Fax' });
+		if (rep.mailing_address) all.push({ key: 'mail', label: 'Mail' });
+		if (rep.web_form_url) all.push({ key: 'web_form', label: 'Web form' });
 		return all;
 	}
 
@@ -55,27 +58,29 @@
 		}
 	}
 
-	const totalActions = $derived($pack.actions.filter((a) => a.status === 'sent').length);
+	const selectedCount = $derived($pack.actions.filter((a) => a.status === 'pending').length);
 </script>
 
 <svelte:head>
-	<title>Contact packet — Civitas</title>
+	<title>Select actions — Civitas</title>
 </svelte:head>
 
 <div class="container" style="padding-top: 2.5rem; padding-bottom: 6rem;">
 	<div class="page-header">
 		<div>
-			<h1>Contact packet</h1>
+			<h1>Select actions</h1>
 			<p style="color: var(--color-text-muted); margin: 0;">
-				Check off each contact as you complete it.
-				{#if totalActions > 0}
-					<strong style="color: var(--color-success);">{totalActions} completed.</strong>
+				Choose which channels to use for each representative and issue.
+				{#if selectedCount > 0}
+					<strong style="color: var(--color-accent);">{selectedCount} selected.</strong>
 				{/if}
 			</p>
 		</div>
 		<div class="header-actions">
-			<button class="btn btn-secondary" onclick={() => window.print()}>Print PDF</button>
-			<button class="btn btn-primary" onclick={() => (showSaveDialog = true)}>Save pack</button>
+			<button class="btn btn-secondary" onclick={() => (showSaveDialog = true)}>Save pack</button>
+			{#if selectedCount > 0}
+				<a href="/action" class="btn btn-primary">Take action →</a>
+			{/if}
 		</div>
 	</div>
 
@@ -103,14 +108,18 @@
 						{@const channels = availableChannels(rep)}
 						<tr>
 							<td class="rep-cell">
-								<div class="rep-meta">
-									<span class="badge badge-{rep.level}">{LEVEL_LABELS[rep.level]}</span>
-									{#if rep.district_name}
-										<span class="rep-dept">{rep.district_name}</span>
-									{/if}
+								<div class="rep-cell-inner">
+									<div class="rep-text">
+										<div class="rep-name">{rep.name}</div>
+										<div class="rep-title">{rep.title}</div>
+									</div>
+									<div class="rep-meta">
+										<span class="badge badge-{rep.level}">{LEVEL_LABELS[rep.level]}</span>
+										{#if rep.district_name}
+											<span class="rep-dept">{rep.district_name}</span>
+										{/if}
+									</div>
 								</div>
-								<div class="rep-name">{rep.name}</div>
-								<div class="rep-title">{rep.title}</div>
 							</td>
 							{#each issues as issue}
 								<td class="actions-cell">
@@ -118,14 +127,10 @@
 										<label class="action-check">
 											<input
 												type="checkbox"
-												checked={isChecked(rep.id, issue.id, ch.key)}
+												checked={isSelected(rep.id, issue.id, ch.key)}
 												onchange={() => toggle(rep.id, issue.id, ch.key)}
 											/>
-											{#if ch.href}
-												<a href={ch.href} target="_blank" rel="noopener">{ch.label}</a>
-											{:else}
-												<span>{ch.label}</span>
-											{/if}
+											<span>{ch.label}</span>
 										</label>
 									{/each}
 									{#if !channels.length}
@@ -138,6 +143,12 @@
 				</tbody>
 			</table>
 		</div>
+
+		{#if selectedCount > 0}
+			<div class="next-bar">
+				<a href="/action" class="btn btn-primary">Take action →</a>
+			</div>
+		{/if}
 	{/if}
 </div>
 
@@ -196,6 +207,7 @@
 	.header-actions {
 		display: flex;
 		gap: 0.75rem;
+		align-items: center;
 	}
 
 	.empty-state {
@@ -256,17 +268,26 @@
 		border-right: 1px solid var(--color-border);
 	}
 
+	.rep-cell-inner {
+		display: flex;
+		flex-direction: row;
+		align-items: flex-start;
+		justify-content: space-between;
+		gap: 0.5rem;
+	}
+
 	.rep-meta {
 		display: flex;
-		align-items: center;
-		gap: 0.375rem;
-		flex-wrap: wrap;
-		margin-bottom: 0.25rem;
+		flex-direction: column;
+		align-items: flex-end;
+		gap: 0.25rem;
+		flex-shrink: 0;
 	}
 
 	.rep-dept {
 		font-size: 0.75rem;
 		color: var(--color-text-muted);
+		text-align: right;
 	}
 
 	.rep-name {
@@ -276,6 +297,20 @@
 	.rep-title {
 		font-size: 0.8125rem;
 		color: var(--color-text-muted);
+	}
+
+	@media (max-width: 480px) {
+		.rep-cell-inner {
+			flex-direction: column-reverse;
+		}
+
+		.rep-meta {
+			align-items: flex-start;
+		}
+
+		.rep-dept {
+			text-align: left;
+		}
 	}
 
 	.issue-col {
@@ -301,6 +336,12 @@
 		flex-shrink: 0;
 	}
 
+	.next-bar {
+		display: flex;
+		justify-content: flex-end;
+		margin-top: 1.5rem;
+	}
+
 	.dialog-overlay {
 		position: fixed;
 		inset: 0;
@@ -319,12 +360,5 @@
 
 	.dialog h3 {
 		margin-bottom: 0.75rem;
-	}
-
-	@media print {
-		.header-actions,
-		.dialog-overlay {
-			display: none !important;
-		}
 	}
 </style>

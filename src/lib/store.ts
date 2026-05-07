@@ -37,6 +37,10 @@ export function setAddress(address: string) {
 	pack.update((p) => ({ ...p, meta: { ...p.meta, address } }));
 }
 
+export function setName(name: string) {
+	pack.update((p) => ({ ...p, prefs: { ...p.prefs, name } }));
+}
+
 export function setReps(incoming: Representative[], address: string) {
 	pack.update((p) => ({
 		...p,
@@ -65,6 +69,15 @@ export function recordAction(action: Action) {
 			: [...p.actions, action];
 		return { ...p, actions };
 	});
+}
+
+export function removeAction(repId: string, issueId: string, channel: Channel) {
+	pack.update((p) => ({
+		...p,
+		actions: p.actions.filter(
+			(a) => !(a.rep_id === repId && a.issue_id === issueId && a.channel === channel)
+		)
+	}));
 }
 
 export function loadPack(loaded: Pack) {

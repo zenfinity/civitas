@@ -1,6 +1,6 @@
 export type Level = 'federal' | 'state' | 'metro' | 'county' | 'city' | 'school' | 'special';
 export type Channel = 'phone' | 'mail' | 'email' | 'fax' | 'web_form';
-export type ActionStatus = 'sent' | 'skipped';
+export type ActionStatus = 'pending' | 'sent' | 'skipped';
 export type Tone = 'constituent_concern' | 'formal_request' | 'urgent_action';
 
 export interface MailingAddress {
@@ -33,6 +33,7 @@ export interface Issue {
 	label: string;
 	description: string;
 	relevant_levels: Level[];
+	script_templates?: Record<string, string>;
 }
 
 export interface Action {
@@ -42,6 +43,7 @@ export interface Action {
 	sent_at: string;
 	status: ActionStatus;
 	script_used: boolean;
+	script?: string;
 }
 
 export interface Prefs {

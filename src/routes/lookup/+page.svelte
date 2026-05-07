@@ -1,10 +1,11 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
 	import { LEVEL_LABELS } from '$lib/types';
-	import { setReps, reps as storeReps } from '$lib/store';
+	import { pack, setReps, setName, reps as storeReps } from '$lib/store';
 	import RepCard from '$lib/components/RepCard.svelte';
 
-	let address = $state('');
+	let name = $state($pack.prefs.name);
+	let address = $state($pack.meta.address);
 	let matchedAddress = $state('');
 	let loading = $state(false);
 	let error = $state('');
@@ -61,17 +62,35 @@
 	</p>
 
 	<form class="address-form" onsubmit={(e) => { e.preventDefault(); lookup(); }}>
-		<div class="address-row">
-			<input
-				class="input"
-				type="text"
-				placeholder="e.g. 1234 NW Thurman St, Portland, OR 97209"
-				bind:value={address}
-				disabled={loading}
-			/>
-			<button class="btn btn-primary" type="submit" disabled={loading || !address.trim()}>
-				{loading ? 'Looking up…' : 'Look up'}
-			</button>
+		<div class="form-row">
+			<div class="field">
+				<label class="label" for="your-name">Your name</label>
+				<input
+					id="your-name"
+					class="input"
+					type="text"
+					placeholder="e.g. Jane Smith"
+					bind:value={name}
+					onblur={() => setName(name)}
+					disabled={loading}
+				/>
+			</div>
+			<div class="field field-address">
+				<label class="label" for="your-address">Address</label>
+				<div class="address-row">
+					<input
+						id="your-address"
+						class="input"
+						type="text"
+						placeholder="e.g. 1234 NW Thurman St, Portland, OR 97209"
+						bind:value={address}
+						disabled={loading}
+					/>
+					<button class="btn btn-primary" type="submit" disabled={loading || !address.trim()}>
+						{loading ? 'Looking up…' : 'Look up'}
+					</button>
+				</div>
+			</div>
 		</div>
 	</form>
 
@@ -111,8 +130,26 @@
 
 <style>
 	.address-form {
-		max-width: 640px;
+		max-width: 720px;
 		margin-bottom: 2rem;
+	}
+
+	.form-row {
+		display: flex;
+		gap: 1rem;
+		align-items: flex-end;
+		flex-wrap: wrap;
+	}
+
+	.field {
+		display: flex;
+		flex-direction: column;
+		gap: 0.375rem;
+		min-width: 160px;
+	}
+
+	.field-address {
+		flex: 1;
 	}
 
 	.address-row {

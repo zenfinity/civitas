@@ -1,6 +1,7 @@
 <script lang="ts">
 	import type { Issue, Level } from '$lib/types';
 	import { LEVEL_LABELS } from '$lib/types';
+	import templates from '$lib/issue-templates.json';
 
 	// Preset issues seeded for Portland v1
 	const PRESET_ISSUES: Omit<Issue, 'id'>[] = [
@@ -64,7 +65,8 @@
 		if (existing) {
 			toggleIssue(existing);
 		} else {
-			toggleIssue({ id: crypto.randomUUID(), ...preset });
+			const script_templates = (templates as Record<string, Record<string, string>>)[preset.label];
+			toggleIssue({ id: crypto.randomUUID(), ...preset, ...(script_templates ? { script_templates } : {}) });
 		}
 	}
 
