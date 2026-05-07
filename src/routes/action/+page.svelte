@@ -246,33 +246,33 @@
 														{/if}
 													{/if}
 												</div>
-												<div class="script-area">
-													<button
-														class="btn-draft"
-														onclick={() => generateScript(rep, issue, action.channel)}
-														disabled={entry?.loading}
-													>{entry?.loading ? 'Drafting…' : entry?.text ? 'Regenerate script' : 'Draft script'}</button>
-													{#if entry?.error}
-														<p class="script-error">{entry.error}</p>
-													{/if}
-													{#if entry?.text}
-														<div class="script-box">
-															<pre class="script-text">{entry.text}</pre>
-															<button class="btn-copy" onclick={() => copyScript(k, entry.text)}>
-																{copiedKey === k ? 'Copied!' : 'Copy'}
-															</button>
-														</div>
-													{/if}
-												</div>
+												{#if entry?.error}
+													<p class="script-error">{entry.error}</p>
+												{/if}
+												{#if entry?.text}
+													<div class="script-box">
+														<pre class="script-text">{entry.text}</pre>
+														<button class="btn-copy" onclick={() => copyScript(k, entry.text)}>
+															{copiedKey === k ? 'Copied!' : 'Copy'}
+														</button>
+													</div>
+												{/if}
 											</div>
-											<label class="done-check">
-												<input
-													type="checkbox"
-													checked={done}
-													onchange={(e) => markDone(rep.id, issue.id, action.channel, e.currentTarget.checked)}
-												/>
-												<span>Done</span>
-											</label>
+											<div class="action-right">
+												<label class="done-check">
+													<input
+														type="checkbox"
+														checked={done}
+														onchange={(e) => markDone(rep.id, issue.id, action.channel, e.currentTarget.checked)}
+													/>
+													<span>Done</span>
+												</label>
+												<button
+													class="btn-draft"
+													onclick={() => generateScript(rep, issue, action.channel)}
+													disabled={entry?.loading}
+												>{entry?.loading ? 'Drafting…' : entry?.text ? 'Regenerate' : 'Draft script'}</button>
+											</div>
 										</div>
 									{/each}
 									{#if !actions.length}
@@ -496,10 +496,12 @@
 		gap: 0.125rem;
 	}
 
-	.script-area {
+	.action-right {
 		display: flex;
 		flex-direction: column;
-		gap: 0.375rem;
+		align-items: flex-end;
+		gap: 0.5rem;
+		flex-shrink: 0;
 	}
 
 	.btn-draft {
@@ -509,8 +511,8 @@
 		border: none;
 		padding: 0;
 		cursor: pointer;
-		text-align: left;
-		width: fit-content;
+		text-align: right;
+		white-space: nowrap;
 	}
 
 	.btn-draft:disabled {

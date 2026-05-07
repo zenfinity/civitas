@@ -65,7 +65,7 @@ function buildPrompt(issue, channel, tone) {
 		case 'web_form':
 			return `Write a web form message from ${from} to ${rep} about "${issue.label}".${ctx} Write ${toneP}. Under 150 words. Plain text only, no markdown. Use {{YOUR_NAME}}, {{REP_NAME}}, {{REP_TITLE}}, {{DISTRICT}} as literal placeholders — do not substitute them.`;
 		case 'fax':
-			return `Write a fax message from ${from} to ${rep} about "${issue.label}".${ctx} Write ${toneP}. Under 200 words. Plain text only, no markdown. Use {{YOUR_NAME}}, {{REP_NAME}}, {{REP_TITLE}}, {{DISTRICT}} as literal placeholders — do not substitute them.`;
+			return `Write a short fax message from ${from} to ${rep} about "${issue.label}".${ctx} Write ${toneP}. Keep it brief — under 150 words. Start directly with "Dear {{REP_TITLE}} {{REP_NAME}}," and end with "Sincerely," followed by {{YOUR_NAME}} on the next line. No letterhead, no address block. Plain text only. Use {{YOUR_NAME}}, {{REP_NAME}}, {{REP_TITLE}}, {{DISTRICT}} as literal placeholders — do not substitute them.`;
 	}
 }
 
