@@ -1,4 +1,4 @@
-import type { Representative, Level, MailingAddress } from './types';
+import type { Representative, Level, MailingAddress, CivicInfo, CivicVotingLocation, CivicContest } from './types';
 
 // Google Civic Information API types
 interface CivicAddress {
@@ -35,7 +35,8 @@ interface CivicResponse {
 	error?: { message: string };
 }
 
-const CIVIC_API = 'https://www.googleapis.com/civicinfo/v2/representatives';
+const CIVIC_BASE = 'https://www.googleapis.com/civicinfo/v2';
+const CIVIC_API = `${CIVIC_BASE}/representatives`;
 
 const LEVEL_MAP: Record<string, Level> = {
 	country: 'federal',
@@ -139,4 +140,126 @@ export async function getRepsByAddress(
 		: address;
 
 	return { reps, normalizedAddress };
+}
+
+// --- Voter information ---
+
+interface RawLocation {
+	address?: {
+		locationName?: string;
+		line1?: string;
+		line2?: string;
+		city?: string;
+		state?: string;
+		zip?: string;
+	};
+	notes?: string;
+	pollingHours?: string;
+	startDate?: string;
+	endDate?: string;
+}
+
+interface RawContest {
+	type?: string;
+	office?: string;
+	district?: { name?: string };
+	candidates?: { name: string; party?: string; candidateUrl?: string }[];
+	referendumTitle?: string;
+	referendumUrl?: string;
+}
+
+interface VoterInfoResponse {
+	election?: { name?: string; electionDay?: string };
+	mailOnly?: boolean;
+	pollingLocations?: RawLocation[];
+	earlyVoteSites?: RawLocation[];
+	dropOffLocations?: RawLocation[];
+	contests?: RawContest[];
+	state?: {
+		name?: string;
+		electionAdministrationBody?: {
+			electionInfoUrl?: string;
+			electionRegistrationUrl?: string;
+			electionRegistrationConfirmationUrl?: string;
+			absenteeVotingInfoUrl?: string;
+			ballotInfoUrl?: string;
+			votingLocationFinderUrl?: string;
+		};
+	}[];
+	error?: { message: string; code: number };
+}
+
+function mapLocation(loc: RawLocation): CivicVotingLocation {
+	const a = loc.address;
+	const parts = [a?.locationName, a?.line1, a?.line2, a?.city, a?.state, a?.zip].filter(Boolean);
+	return {
+		name: a?.locationName,
+		address: parts.filter((p, i) => i > 0 || p !== a?.locationName).join(', '),
+		notes: loc.notes,
+		polling_hours: loc.pollingHours,
+		start_date: loc.startDate,
+		end_date: loc.endDate
+	};
+}
+
+function mapContest(c: RawContest): CivicContest {
+	return {
+		office: c.office,
+		district: c.district?.name,
+		candidates: c.candidates?.map((cand) => ({
+			name: cand.name,
+			party: cand.party,
+			url: cand.candidateUrl
+		})),
+		referendum_title: c.referendumTitle,
+		referendum_url: c.referendumUrl
+	};
+}
+
+export async function getCivicVoterInfo(
+	address: string,
+	apiKey: string
+): Promise<CivicInfo | null> {
+	const url = new URL(`${CIVIC_BASE}/voterinfo`);
+	url.searchParams.set('address', address);
+	url.searchParams.set('key', apiKey);
+	url.searchParams.set('returnAllAvailableData', 'true');
+
+	let res: Response;
+	try {
+		res = await fetch(url.toString());
+	} catch {
+		return null;
+	}
+
+	const data: VoterInfoResponse = await res.json();
+
+	// 400 with code 400 means no election data available — not an error worth surfacing
+	if (!res.ok) return null;
+
+	const admin = data.state?.[0]?.electionAdministrationBody;
+
+	const info: CivicInfo = {
+		fetched_at: new Date().toISOString(),
+		election_name: data.election?.name,
+		election_day: data.election?.electionDay,
+		mail_only: data.mailOnly ?? false,
+		polling_locations: (data.pollingLocations ?? []).map(mapLocation),
+		early_vote_sites: (data.earlyVoteSites ?? []).map(mapLocation),
+		drop_off_locations: (data.dropOffLocations ?? []).map(mapLocation),
+		contests: (data.contests ?? []).map(mapContest),
+		state_info: data.state?.[0]
+			? {
+					name: data.state[0].name ?? '',
+					election_info_url: admin?.electionInfoUrl,
+					voter_registration_url: admin?.electionRegistrationUrl,
+					registration_confirmation_url: admin?.electionRegistrationConfirmationUrl,
+					absentee_url: admin?.absenteeVotingInfoUrl,
+					ballot_info_url: admin?.ballotInfoUrl,
+					voting_location_finder_url: admin?.votingLocationFinderUrl
+				}
+			: undefined
+	};
+
+	return info;
 }
