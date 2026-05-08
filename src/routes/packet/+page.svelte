@@ -11,16 +11,16 @@
 	let saving = $state(false);
 	let saveError = $state('');
 
-	function isSelected(repId: string, issueId: string, channel: string) {
-		return $pack.actions.some(
-			(a) => a.rep_id === repId && a.issue_id === issueId && a.channel === channel && a.status === 'pending'
-		);
+	function selectedChannel(repId: string, issueId: string): string {
+		return $pack.actions.find(
+			(a) => a.rep_id === repId && a.issue_id === issueId && (a.status === 'pending' || a.status === 'sent')
+		)?.channel ?? '';
 	}
 
-	function toggle(repId: string, issueId: string, channel: string) {
-		if (isSelected(repId, issueId, channel)) {
-			removeAction(repId, issueId, channel as Channel);
-		} else {
+	function selectChannel(repId: string, issueId: string, channel: string) {
+		const existing = $pack.actions.filter((a) => a.rep_id === repId && a.issue_id === issueId);
+		for (const a of existing) removeAction(repId, issueId, a.channel);
+		if (channel) {
 			recordAction({
 				rep_id: repId,
 				issue_id: issueId,
@@ -122,18 +122,32 @@
 								</div>
 							</td>
 							{#each issues as issue}
+								{@const sel = selectedChannel(rep.id, issue.id)}
 								<td class="actions-cell">
-									{#each channels as ch}
-										<label class="action-check">
+									{#if channels.length}
+										<label class="action-radio">
 											<input
-												type="checkbox"
-												checked={isSelected(rep.id, issue.id, ch.key)}
-												onchange={() => toggle(rep.id, issue.id, ch.key)}
+												type="radio"
+												name="{rep.id}:{issue.id}"
+												value=""
+												checked={!sel}
+												onchange={() => selectChannel(rep.id, issue.id, '')}
 											/>
-											<span>{ch.label}</span>
+											<span>None</span>
 										</label>
-									{/each}
-									{#if !channels.length}
+										{#each channels as ch}
+											<label class="action-radio">
+												<input
+													type="radio"
+													name="{rep.id}:{issue.id}"
+													value={ch.key}
+													checked={sel === ch.key}
+													onchange={() => selectChannel(rep.id, issue.id, ch.key)}
+												/>
+												<span>{ch.label}</span>
+											</label>
+										{/each}
+									{:else}
 										<span style="color: var(--color-text-muted); font-size: 0.8125rem;">No contact info</span>
 									{/if}
 								</td>
@@ -315,13 +329,15 @@
 
 	.issue-col {
 		min-width: 160px;
+		border-left: 1px solid var(--color-border);
 	}
 
 	.actions-cell {
 		vertical-align: top;
+		border-left: 1px solid var(--color-border);
 	}
 
-	.action-check {
+	.action-radio {
 		display: flex;
 		align-items: center;
 		gap: 0.375rem;
@@ -330,7 +346,7 @@
 		cursor: pointer;
 	}
 
-	.action-check input[type='checkbox'] {
+	.action-radio input[type='radio'] {
 		width: 14px;
 		height: 14px;
 		flex-shrink: 0;
