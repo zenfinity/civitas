@@ -167,6 +167,10 @@
 	}
 
 	@media (max-width: 480px) {
+		.site-footer {
+			padding-bottom: 4.5rem;
+		}
+
 		.crumb-num {
 			display: none;
 		}

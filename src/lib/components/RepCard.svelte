@@ -1,6 +1,6 @@
 <script lang="ts">
 	import type { Representative } from '$lib/types';
-	import { CHANNEL_LABELS } from '$lib/types';
+	import { CHANNEL_LABELS, CHANNEL_ICONS } from '$lib/types';
 
 	const { rep }: { rep: Representative } = $props();
 
@@ -29,7 +29,7 @@
 	<div class="channels">
 		{#each channels as ch}
 			<span class="channel-dot" class:available={ch.available} title={CHANNEL_LABELS[ch.key]}>
-				{ch.key === 'phone' ? '☎' : ch.key === 'email' ? '✉' : ch.key === 'fax' ? 'F' : ch.key === 'mail' ? '✉' : '🌐'}
+				{CHANNEL_ICONS[ch.key]}
 			</span>
 		{/each}
 	</div>

@@ -148,3 +148,11 @@ export const CHANNEL_LABELS: Record<Channel, string> = {
 	fax: 'Fax',
 	web_form: 'Web Form'
 };
+
+export const CHANNEL_ICONS: Record<Channel, string> = {
+	phone: '☎',
+	email: '✉',
+	fax: '📠',
+	mail: '📬',
+	web_form: '🌐'
+};

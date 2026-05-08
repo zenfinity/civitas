@@ -1,12 +1,11 @@
 <script lang="ts">
-	import { LEVEL_LABELS } from '$lib/types';
+	import { LEVEL_LABELS, CHANNEL_LABELS, CHANNEL_ICONS, type Channel } from '$lib/types';
 	import { pack, setReps, setName, setEmail, reps as storeReps } from '$lib/store';
 	import RepCard from '$lib/components/RepCard.svelte';
 
 	let name = $state($pack.prefs.name);
 	let email = $state($pack.prefs.email ?? '');
 	let address = $state($pack.meta.address);
-	let matchedAddress = $state('');
 	let loading = $state(false);
 	let error = $state('');
 	let searched = $state(false);
@@ -35,7 +34,6 @@
 			}
 
 			setReps(data.reps, address);
-			matchedAddress = data.matchedAddress;
 			searched = true;
 		} catch {
 			error = 'Network error — please try again';
@@ -118,8 +116,17 @@
 
 	{#if reps.length}
 		<div class="results-header">
-			<p class="matched-address">Showing results for: <strong>{matchedAddress}</strong></p>
 			<a href="/issues" class="btn btn-primary">Select issues →</a>
+		</div>
+
+		<div class="channel-legend">
+			{#each Object.entries(CHANNEL_ICONS) as [key, icon]}
+				<span class="legend-item">
+					<span class="legend-icon">{icon}</span>
+					<span class="legend-label">{CHANNEL_LABELS[key as Channel]}</span>
+				</span>
+			{/each}
+			<span class="legend-note">Dimmed = no contact info available</span>
 		</div>
 
 		{#each levels as level}
@@ -194,17 +201,38 @@
 	.results-header {
 		display: flex;
 		align-items: center;
-		justify-content: space-between;
+		justify-content: flex-end;
 		gap: 1rem;
-		margin-bottom: 2rem;
+		margin-bottom: 1rem;
 		flex-wrap: wrap;
 	}
 
-	.matched-address {
-		font-size: 0.9375rem;
+	.channel-legend {
+		display: flex;
+		align-items: center;
+		gap: 1.25rem;
+		flex-wrap: wrap;
+		margin-bottom: 2rem;
+		font-size: 0.8125rem;
 		color: var(--color-text-muted);
-		margin: 0;
 	}
+
+	.legend-item {
+		display: flex;
+		align-items: center;
+		gap: 0.3rem;
+	}
+
+	.legend-icon {
+		font-size: 1rem;
+		line-height: 1;
+	}
+
+	.legend-note {
+		margin-left: auto;
+		font-style: italic;
+	}
+
 
 	.level-section {
 		margin-bottom: 2.5rem;
