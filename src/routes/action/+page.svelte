@@ -104,6 +104,15 @@
 		return `combined:${repId}:${channel}`;
 	}
 
+	function issuesForRepChannel(repId: string, channel: string): Issue[] {
+		return issues.filter((issue) =>
+			$pack.actions.some(
+				(a) => a.rep_id === repId && a.issue_id === issue.id &&
+					a.channel === channel && (a.status === 'pending' || a.status === 'sent')
+			)
+		);
+	}
+
 	function uniqueChannelsForRep(repId: string): Channel[] {
 		const seen = new Set<Channel>();
 		const result: Channel[] = [];
@@ -119,6 +128,7 @@
 	async function generateCombinedScript(rep: Representative, channel: string) {
 		const ck = combineKey(rep.id, channel);
 		const tone = $pack.prefs.tone_preference as Tone;
+		const channelIssues = issuesForRepChannel(rep.id, channel);
 		combinedScripts[ck] = { loading: true, text: '', error: '' };
 		try {
 			const res = await fetch('/api/script-combined', {
@@ -128,7 +138,7 @@
 					repName: rep.name,
 					repTitle: rep.title,
 					districtName: rep.district_name,
-					issues: issues.map((i) => ({ name: i.label, description: i.description })),
+					issues: channelIssues.map((i) => ({ name: i.label, description: i.description })),
 					channel,
 					tone,
 					userName: $pack.prefs.name,
@@ -424,7 +434,7 @@
 								</td>
 							{/each}
 							{#if issues.length > 1}
-								{@const channels = uniqueChannelsForRep(rep.id)}
+								{@const channels = uniqueChannelsForRep(rep.id).filter((ch) => issuesForRepChannel(rep.id, ch).length > 1)}
 								<td class="combined-cell">
 									{#each channels as channel}
 										{@const ck = combineKey(rep.id, channel)}
@@ -549,6 +559,7 @@
 		width: 100%;
 		border-collapse: collapse;
 		font-size: 0.9375rem;
+		table-layout: fixed;
 	}
 
 	.packet-table th,
@@ -569,7 +580,7 @@
 	}
 
 	.rep-col {
-		min-width: 180px;
+		width: 220px;
 		position: sticky;
 		left: 0;
 		background: var(--color-bg) !important;
@@ -577,10 +588,12 @@
 	}
 
 	.rep-cell {
+		width: 220px;
 		position: sticky;
 		left: 0;
 		background: var(--color-surface);
 		border-right: 1px solid var(--color-border);
+		overflow: hidden;
 	}
 
 	.rep-cell-inner {
@@ -629,7 +642,8 @@
 	}
 
 	.issue-col {
-		min-width: 200px;
+		width: 300px;
+		border-left: 1px solid var(--color-border);
 	}
 
 	.combined-col {
@@ -643,8 +657,19 @@
 		vertical-align: top;
 	}
 
+	.combined-cell .action-item {
+		flex-direction: column;
+		gap: 0.375rem;
+	}
+
+	.combined-cell .action-right {
+		align-items: flex-start;
+	}
+
 	.actions-cell {
 		vertical-align: top;
+		overflow: hidden;
+		border-left: 1px solid var(--color-border);
 	}
 
 	.action-item {
@@ -714,6 +739,8 @@
 		border: 1px solid var(--color-border);
 		border-radius: var(--radius-sm, 6px);
 		padding: 0.625rem 0.75rem;
+		max-height: 20rem;
+		overflow-y: auto;
 	}
 
 	.script-text {
