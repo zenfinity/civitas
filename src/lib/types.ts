@@ -108,6 +108,7 @@ export interface Pack {
 	actions: Action[];
 	prefs: Prefs;
 	civic_info?: CivicInfo | null;
+	combined_scripts?: Record<string, string>;
 }
 
 export function emptyPack(address = ''): Pack {

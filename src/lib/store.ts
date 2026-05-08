@@ -84,6 +84,13 @@ export function removeAction(repId: string, issueId: string, channel: Channel) {
 	}));
 }
 
+export function recordCombinedScript(repId: string, channel: string, script: string) {
+	pack.update((p) => ({
+		...p,
+		combined_scripts: { ...p.combined_scripts, [`${repId}:${channel}`]: script }
+	}));
+}
+
 export function setCivicInfo(info: CivicInfo | null) {
 	pack.update((p) => ({ ...p, civic_info: info }));
 }

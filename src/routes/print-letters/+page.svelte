@@ -10,27 +10,44 @@
 		text: string;
 	};
 
-	const letters = $derived<LetterItem[]>(
-		$pack.actions
-			.filter((a) => a.channel === 'mail' && (a.status === 'pending' || a.status === 'sent'))
-			.flatMap((action) => {
-				const rep = $pack.reps.find((r) => r.id === action.rep_id);
-				const issue = $pack.issues.find((i) => i.id === action.issue_id);
-				if (!rep || !issue) return [];
-				const text = resolveScript(
-					action.script,
-					issue.label,
-					'mail',
-					$pack.prefs.tone_preference as Tone,
-					rep,
-					$pack.prefs.name,
-					$pack.prefs.email ?? '',
-					$pack.meta.address ?? '',
-					allTemplates as Record<string, Record<string, string>>
-				);
-				return [{ rep, issueLabel: issue.label, text }];
-			})
-	);
+	const letters = $derived.by<LetterItem[]>(() => {
+		const mailActions = $pack.actions.filter(
+			(a) => a.channel === 'mail' && (a.status === 'pending' || a.status === 'sent')
+		);
+		const repIds = [...new Set(mailActions.map((a) => a.rep_id))];
+		const result: LetterItem[] = [];
+		for (const repId of repIds) {
+			const rep = $pack.reps.find((r) => r.id === repId);
+			if (!rep) continue;
+			const combinedScript = $pack.combined_scripts?.[`${repId}:mail`];
+			if (combinedScript) {
+				const issueLabels = mailActions
+					.filter((a) => a.rep_id === repId)
+					.map((a) => $pack.issues.find((i) => i.id === a.issue_id)?.label)
+					.filter(Boolean)
+					.join(', ');
+				result.push({ rep, issueLabel: issueLabels || 'Combined', text: combinedScript });
+			} else {
+				for (const action of mailActions.filter((a) => a.rep_id === repId)) {
+					const issue = $pack.issues.find((i) => i.id === action.issue_id);
+					if (!issue) continue;
+					const text = resolveScript(
+						action.script,
+						issue.label,
+						'mail',
+						$pack.prefs.tone_preference as Tone,
+						rep,
+						$pack.prefs.name,
+						$pack.prefs.email ?? '',
+						$pack.meta.address ?? '',
+						allTemplates as Record<string, Record<string, string>>
+					);
+					result.push({ rep, issueLabel: issue.label, text });
+				}
+			}
+		}
+		return result;
+	});
 
 	// Only reps that have a mailing address can get an envelope
 	const envelopes = $derived(letters.filter((l) => l.rep.mailing_address));
