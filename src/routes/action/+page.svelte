@@ -96,6 +96,60 @@
 		$pack.actions.filter((a) => a.channel === 'mail' && (a.status === 'pending' || a.status === 'sent')).length
 	);
 
+	// Combined scripts — keyed by "combined:repId:channel", ephemeral (not persisted to pack)
+	let combinedScripts = $state<Record<string, ScriptEntry>>({});
+	let copiedCombinedKey = $state('');
+
+	function combineKey(repId: string, channel: string) {
+		return `combined:${repId}:${channel}`;
+	}
+
+	function uniqueChannelsForRep(repId: string): Channel[] {
+		const seen = new Set<Channel>();
+		const result: Channel[] = [];
+		for (const a of $pack.actions) {
+			if (a.rep_id === repId && (a.status === 'pending' || a.status === 'sent') && !seen.has(a.channel)) {
+				seen.add(a.channel);
+				result.push(a.channel as Channel);
+			}
+		}
+		return result;
+	}
+
+	async function generateCombinedScript(rep: Representative, channel: string) {
+		const ck = combineKey(rep.id, channel);
+		const tone = $pack.prefs.tone_preference as Tone;
+		combinedScripts[ck] = { loading: true, text: '', error: '' };
+		try {
+			const res = await fetch('/api/script-combined', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({
+					repName: rep.name,
+					repTitle: rep.title,
+					districtName: rep.district_name,
+					issues: issues.map((i) => ({ name: i.label, description: i.description })),
+					channel,
+					tone,
+					userName: $pack.prefs.name,
+					userAddress: $pack.meta.address,
+					userEmail: $pack.prefs.email
+				})
+			});
+			if (!res.ok) throw new Error((await res.text()) || 'Generation failed');
+			const data = await res.json();
+			combinedScripts[ck] = { loading: false, text: data.script, error: '' };
+		} catch (e) {
+			combinedScripts[ck] = { loading: false, text: '', error: e instanceof Error ? e.message : 'Failed' };
+		}
+	}
+
+	async function copyCombinedScript(ck: string, text: string) {
+		await navigator.clipboard.writeText(text);
+		copiedCombinedKey = ck;
+		setTimeout(() => { copiedCombinedKey = ''; }, 2000);
+	}
+
 	function getAction(repId: string, issueId: string, channel: string) {
 		return $pack.actions.find(
 			(a) => a.rep_id === repId && a.issue_id === issueId && a.channel === channel
@@ -288,6 +342,9 @@
 						{#each issues as issue}
 							<th class="issue-col">{issue.label}</th>
 						{/each}
+						{#if issues.length > 1}
+							<th class="combined-col">Combined</th>
+						{/if}
 					</tr>
 				</thead>
 				<tbody>
@@ -366,6 +423,41 @@
 									{/if}
 								</td>
 							{/each}
+							{#if issues.length > 1}
+								{@const channels = uniqueChannelsForRep(rep.id)}
+								<td class="combined-cell">
+									{#each channels as channel}
+										{@const ck = combineKey(rep.id, channel)}
+										{@const entry = combinedScripts[ck]}
+										<div class="action-item">
+											<div class="action-main">
+												<span class="channel-label">{CHANNEL_LABELS[channel]}</span>
+												{#if entry?.error}
+													<p class="script-error">{entry.error}</p>
+												{/if}
+												{#if entry?.text}
+													<div class="script-box">
+														<pre class="script-text">{entry.text}</pre>
+														<button class="btn-copy" onclick={() => copyCombinedScript(ck, entry.text)}>
+															{copiedCombinedKey === ck ? 'Copied!' : 'Copy'}
+														</button>
+													</div>
+												{/if}
+											</div>
+											<div class="action-right">
+												<button
+													class="btn-draft"
+													onclick={() => generateCombinedScript(rep, channel)}
+													disabled={entry?.loading}
+												>{entry?.loading ? 'Drafting…' : entry?.text ? 'Regenerate' : 'Generate combined'}</button>
+											</div>
+										</div>
+									{/each}
+									{#if !channels.length}
+										<span class="no-action">—</span>
+									{/if}
+								</td>
+							{/if}
 						</tr>
 					{/each}
 				</tbody>
@@ -538,6 +630,17 @@
 
 	.issue-col {
 		min-width: 200px;
+	}
+
+	.combined-col {
+		min-width: 220px;
+		background: var(--color-bg) !important;
+		border-left: 2px solid var(--color-border);
+	}
+
+	.combined-cell {
+		border-left: 2px solid var(--color-border);
+		vertical-align: top;
 	}
 
 	.actions-cell {
