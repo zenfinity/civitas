@@ -61,17 +61,16 @@
 
 	let root: HTMLElement;
 
-	function printLetters() {
-		root.dataset.printMode = 'letters';
-		window.print();
-		window.addEventListener('afterprint', () => delete root.dataset.printMode, { once: true });
+	function triggerPrint(mode: string) {
+		root.dataset.printMode = mode;
+		requestAnimationFrame(() => {
+			window.print();
+			window.addEventListener('afterprint', () => delete root.dataset.printMode, { once: true });
+		});
 	}
 
-	function printEnvelopes() {
-		root.dataset.printMode = 'envelopes';
-		window.print();
-		window.addEventListener('afterprint', () => delete root.dataset.printMode, { once: true });
-	}
+	const printLetters = () => triggerPrint('letters');
+	const printEnvelopes = () => triggerPrint('envelopes');
 </script>
 
 <svelte:head>
@@ -153,10 +152,19 @@
 	{/if}
 </div>
 
-<!-- Named @page rules for mixed paper sizes -->
+<!-- Unscoped print rules (Svelte scoping breaks attribute-selector switching) -->
 <svelte:element this="style">
 	{'@page letter-page { size: letter portrait; margin: 1in; }'}
 	{'@page envelope-page { size: 9.5in 4.125in landscape; margin: 0; }'}
+	{'@media print { .site-header, .site-footer, .site-footer * { display: none !important; } }'}
+	{'@media print { .letter-page:last-child { break-after: auto !important; } }'}
+	{'@media print {'}
+	{'  [data-print-mode="envelopes"] .letter-page,'}
+	{'  [data-print-mode="envelopes"] .letters-wrap { display: none !important; }'}
+	{'  [data-print-mode="envelopes"] .envelopes-wrap { display: block !important; margin: 0; padding: 0; gap: 0; }'}
+	{'  [data-print-mode="envelopes"] .envelope-page { display: block !important; page: envelope-page; break-after: page; box-shadow: none; width: 9.5in; height: 4.125in; overflow: hidden; }'}
+	{'  [data-print-mode="envelopes"] .envelope-page:last-child { break-after: auto; }'}
+	{'}'}
 </svelte:element>
 
 <style>
@@ -282,6 +290,8 @@
 			#c8d2dc calc(1.85em - 1px),
 			#c8d2dc 1.85em
 		);
+		-webkit-print-color-adjust: exact;
+		print-color-adjust: exact;
 		margin: 0.5em 0;
 	}
 
@@ -397,29 +407,20 @@
 			min-height: 0;
 		}
 
+		.letter-page:last-child {
+			break-after: auto;
+		}
+
 		.letter-page.letter-hw {
 			display: flex;
 			flex-direction: column;
-			height: 9in;
+			height: auto;
 		}
 
-		/* Envelope print mode */
-		[data-print-mode='envelopes'] .letter-page,
-		[data-print-mode='envelopes'] .letters-wrap {
-			display: none !important;
+		.letter-page.letter-hw .hw-write {
+			min-height: 3in;
+			flex: none;
 		}
 
-		[data-print-mode='envelopes'] .envelopes-wrap,
-		[data-print-mode='envelopes'] .envelope-page {
-			display: block !important;
-		}
-
-		[data-print-mode='envelopes'] .envelope-page {
-			page: envelope-page;
-			break-after: page;
-			box-shadow: none;
-			width: 100%;
-			height: 100%;
-		}
 	}
 </style>
