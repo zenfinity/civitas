@@ -1,6 +1,6 @@
 <script lang="ts">
-	import { LEVEL_LABELS, type CivicInfo } from '$lib/types';
-	import { pack, setReps, setName, setEmail, setCivicInfo, reps as storeReps } from '$lib/store';
+	import { LEVEL_LABELS } from '$lib/types';
+	import { pack, setReps, setName, setEmail, reps as storeReps } from '$lib/store';
 	import RepCard from '$lib/components/RepCard.svelte';
 
 	let name = $state($pack.prefs.name);
@@ -13,7 +13,6 @@
 
 	// Show reps already in the store if the user navigated back.
 	let reps = $derived($storeReps);
-	let civicInfo = $derived($pack.civic_info ?? null);
 
 	async function lookup() {
 		if (!address.trim()) return;
@@ -22,22 +21,15 @@
 		searched = false;
 
 		try {
-			const [repsRes, civicRes] = await Promise.all([
-				fetch('/api/reps', {
-					method: 'POST',
-					headers: { 'Content-Type': 'application/json' },
-					body: JSON.stringify({ address })
-				}),
-				fetch('/api/civic', {
-					method: 'POST',
-					headers: { 'Content-Type': 'application/json' },
-					body: JSON.stringify({ address })
-				})
-			]);
+			const res = await fetch('/api/reps', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({ address })
+			});
 
-			const data = await repsRes.json();
+			const data = await res.json();
 
-			if (!repsRes.ok) {
+			if (!res.ok) {
 				error = data.error ?? 'Lookup failed';
 				return;
 			}
@@ -45,24 +37,11 @@
 			setReps(data.reps, address);
 			matchedAddress = data.matchedAddress;
 			searched = true;
-
-			if (civicRes.ok) {
-				const civicData = await civicRes.json();
-				setCivicInfo(civicData.civic_info ?? null);
-			}
 		} catch {
 			error = 'Network error — please try again';
 		} finally {
 			loading = false;
 		}
-	}
-
-	function formatElectionDay(dateStr: string): string {
-		// API returns YYYY-MM-DD; parse in local time to avoid off-by-one UTC issues
-		const [y, m, d] = dateStr.split('-').map(Number);
-		return new Date(y, m - 1, d).toLocaleDateString('en-US', {
-			weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
-		});
 	}
 
 	const levels = ['federal', 'state', 'metro', 'county', 'city', 'school', 'special'] as const;
@@ -159,104 +138,17 @@
 			{/if}
 		{/each}
 
-		{#if civicInfo}
-			<section class="civic-section">
-				<h2 class="civic-heading">Voter information</h2>
-
-				{#if civicInfo.election_name}
-					<div class="civic-card card">
-						<div class="civic-election">
-							<span class="civic-label">Next election</span>
-							<span class="civic-election-name">{civicInfo.election_name}</span>
-							{#if civicInfo.election_day}
-								<span class="civic-election-date">{formatElectionDay(civicInfo.election_day)}</span>
-							{/if}
-							{#if civicInfo.mail_only}
-								<span class="civic-tag">Vote by mail</span>
-							{/if}
-						</div>
+		<section class="civic-section">
+				<h2 class="civic-heading">Oregon voter resources</h2>
+				<div class="civic-card card">
+					<div class="civic-links">
+						<a href="https://myvote.sos.oregon.gov/" target="_blank" rel="noopener" class="civic-link">My Vote Oregon — registration, ballot tracking &amp; drop boxes</a>
+						<a href="https://registertovote.oregon.gov/" target="_blank" rel="noopener" class="civic-link">Register or update your registration</a>
+						<a href="https://sos.oregon.gov/elections/" target="_blank" rel="noopener" class="civic-link">Oregon Secretary of State — Elections</a>
+						<a href="https://www.multco.us/elections" target="_blank" rel="noopener" class="civic-link">Multnomah County Elections</a>
 					</div>
-				{/if}
-
-				{#if civicInfo.state_info}
-					{@const si = civicInfo.state_info}
-					<div class="civic-card card">
-						<span class="civic-label">State election resources</span>
-						<div class="civic-links">
-							{#if si.voter_registration_url}
-								<a href={si.voter_registration_url} target="_blank" rel="noopener" class="civic-link">Register to vote</a>
-							{/if}
-							{#if si.registration_confirmation_url}
-								<a href={si.registration_confirmation_url} target="_blank" rel="noopener" class="civic-link">Confirm registration</a>
-							{/if}
-							{#if si.ballot_info_url}
-								<a href={si.ballot_info_url} target="_blank" rel="noopener" class="civic-link">Ballot information</a>
-							{/if}
-							{#if si.absentee_url}
-								<a href={si.absentee_url} target="_blank" rel="noopener" class="civic-link">Absentee / mail ballot</a>
-							{/if}
-							{#if si.voting_location_finder_url}
-								<a href={si.voting_location_finder_url} target="_blank" rel="noopener" class="civic-link">Find voting location</a>
-							{/if}
-							{#if si.election_info_url}
-								<a href={si.election_info_url} target="_blank" rel="noopener" class="civic-link">Election info</a>
-							{/if}
-						</div>
-					</div>
-				{/if}
-
-				{#if civicInfo.drop_off_locations.length}
-					<div class="civic-card card">
-						<span class="civic-label">Ballot drop boxes near you</span>
-						<div class="civic-locations">
-							{#each civicInfo.drop_off_locations.slice(0, 5) as loc}
-								<div class="civic-location">
-									{#if loc.name}<strong>{loc.name}</strong>{/if}
-									<span>{loc.address}</span>
-									{#if loc.polling_hours}<span class="civic-hours">{loc.polling_hours}</span>{/if}
-									{#if loc.start_date && loc.end_date}
-										<span class="civic-hours">{loc.start_date} – {loc.end_date}</span>
-									{/if}
-									{#if loc.notes}<span class="civic-notes">{loc.notes}</span>{/if}
-								</div>
-							{/each}
-						</div>
-					</div>
-				{/if}
-
-				{#if civicInfo.early_vote_sites.length}
-					<div class="civic-card card">
-						<span class="civic-label">Early voting locations</span>
-						<div class="civic-locations">
-							{#each civicInfo.early_vote_sites.slice(0, 5) as loc}
-								<div class="civic-location">
-									{#if loc.name}<strong>{loc.name}</strong>{/if}
-									<span>{loc.address}</span>
-									{#if loc.polling_hours}<span class="civic-hours">{loc.polling_hours}</span>{/if}
-									{#if loc.notes}<span class="civic-notes">{loc.notes}</span>{/if}
-								</div>
-							{/each}
-						</div>
-					</div>
-				{/if}
-
-				{#if civicInfo.polling_locations.length}
-					<div class="civic-card card">
-						<span class="civic-label">Polling locations</span>
-						<div class="civic-locations">
-							{#each civicInfo.polling_locations.slice(0, 5) as loc}
-								<div class="civic-location">
-									{#if loc.name}<strong>{loc.name}</strong>{/if}
-									<span>{loc.address}</span>
-									{#if loc.polling_hours}<span class="civic-hours">{loc.polling_hours}</span>{/if}
-									{#if loc.notes}<span class="civic-notes">{loc.notes}</span>{/if}
-								</div>
-							{/each}
-						</div>
-					</div>
-				{/if}
+				</div>
 			</section>
-		{/if}
 	{/if}
 </div>
 
